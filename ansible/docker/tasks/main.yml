@@ -1,0 +1,72 @@
+---
+- name: Install Pip.
+  apt: name=python-pip state=installed
+  become: yes
+
+- name: Install Docker Python library.
+  pip: name=docker-py state=present
+  become: yes
+
+- name: Run a Data container.
+  docker:
+    image: sajidmomin/digitalx-data:latest
+    name: data
+    state: present
+    tags:
+      - complete
+
+- name: Run a Redis container.
+  docker:
+    image: redis
+    name: redis
+    state: running
+    tags:
+      - complete
+
+- name: Run a MySQL container.
+  docker:
+    image: sajidmomin/digitalx-mysql:latest
+    name: db
+    state: running
+    volumes_from: data
+    tags:
+      - complete
+
+- name: Run a DigitalX container.
+  docker:
+    image: sajidmomin/digitalx:latest
+    name: dxm
+    state: running
+    volumes_from: data
+    links:
+      - db:mysql
+      - redis:redis
+    tags:
+      - complete
+
+- name: Run a Browsing DigitalX container.
+  docker:
+    image: sajidmomin/digitalx:latest
+    name: dxm-browsing
+    state: running
+    volumes_from: data
+    links:
+      - db:mysql
+      - redis:redis
+    env:
+      BROWSING: true
+    tags:
+      - complete
+
+- name: Run a NGINX container.
+  docker:
+    image: sajidmomin/digitalx-nginx:latest
+    name: web
+    links:
+      - dxm:node1
+      - dxm-browsing:node2
+    ports:
+      - 80:80
+      - 443:443
+    tags:
+      - complete

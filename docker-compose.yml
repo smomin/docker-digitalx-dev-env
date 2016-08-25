@@ -12,7 +12,6 @@ services:
       - data
   dxm:
     image: sajidmomin/digitalx:latest
-    mem_limit: 4096m
     volumes_from:
       - data
     links:
@@ -20,11 +19,24 @@ services:
       - redis:redis
     ports:
       - 9088:8080
+  dxm2:
+    image: sajidmomin/digitalx:latest
+    volumes_from:
+      - data
+    links:
+      - db:mysql
+      - redis:redis
+      - dxm:node1
+    environment:
+      - BROWSING=true
+    ports:
+      - 9089:8080
   web:
     image: sajidmomin/digitalx-nginx:latest
     mem_limit: 500m
     links:
       - dxm:node1
+      - dxm2:node2
     ports:
       - 80:80
       - 443:443
